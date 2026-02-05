@@ -26,6 +26,36 @@ const initialState: ExchangeState = {
   sellCurrency: 'USD',
 }
 
+const recalculate = (
+  sellAmount: string,
+  sellCurrency: CurrencyType,
+  buyCurrency: CurrencyType
+) =>
+  sellAmount
+    ? calculateExchangeAmount(
+      sellAmount,
+      sellCurrency,
+      buyCurrency,
+      'FORWARD'
+    )
+    : ''
+
+const swapCurrencies = (state: ExchangeState, amount: string): ExchangeState => {
+  const sellCurrency = state.buyCurrency
+  const buyCurrency = state.sellCurrency
+  return {
+    ...state,
+    sellCurrency,
+    buyCurrency,
+    sellAmount: amount,
+    buyAmount: recalculate(
+      amount,
+      sellCurrency,
+      buyCurrency
+    ),
+  }
+}
+
 const exchangeReducer = (state: ExchangeState, action: ExchangeAction): ExchangeState => {
   switch (action.type) {
     case 'SET_SELL_AMOUNT':
@@ -33,12 +63,7 @@ const exchangeReducer = (state: ExchangeState, action: ExchangeAction): Exchange
       return {
         ...state,
         sellAmount: action.value,
-        buyAmount: calculateExchangeAmount(
-          action.value,
-          state.sellCurrency,
-          state.buyCurrency,
-          'FORWARD'
-        ),
+        buyAmount: recalculate(action.value, state.sellCurrency, state.buyCurrency)
       }
 
     case 'SET_BUY_AMOUNT':
@@ -56,88 +81,32 @@ const exchangeReducer = (state: ExchangeState, action: ExchangeAction): Exchange
 
     case 'SET_SELL_CURRENCY': {
       if (action.value === state.buyCurrency) {
-        const sellCurrency = state.buyCurrency
-        const buyCurrency = state.sellCurrency
-        return {
-          ...state,
-          sellCurrency,
-          buyCurrency,
-          buyAmount: state.sellAmount
-            ? calculateExchangeAmount(
-              state.sellAmount,
-              sellCurrency,
-              buyCurrency,
-              'FORWARD'
-            )
-            : ''
-        }
+        return swapCurrencies(state, state.sellAmount)
       }
 
       const sellCurrency = action.value
       return {
         ...state,
         sellCurrency,
-        buyAmount: state.sellAmount
-          ? calculateExchangeAmount(
-            state.sellAmount,
-            sellCurrency,
-            state.buyCurrency,
-            'FORWARD'
-          ) : '',
+        buyAmount: recalculate(state.sellAmount, sellCurrency, state.buyCurrency)
       }
     }
 
     case 'SET_BUY_CURRENCY': {
       if (action.value === state.sellCurrency) {
-        const sellCurrency = state.buyCurrency
-        const buyCurrency = state.sellCurrency
-        return {
-          ...state,
-          sellCurrency,
-          buyCurrency,
-          buyAmount: state.sellAmount
-            ? calculateExchangeAmount(
-              state.sellAmount,
-              sellCurrency,
-              buyCurrency,
-              'FORWARD'
-            )
-            : ''
-        }
+        return swapCurrencies(state, state.sellAmount)
       }
 
       const buyCurrency = action.value
       return {
         ...state,
         buyCurrency,
-        buyAmount: state.sellAmount
-          ? calculateExchangeAmount(
-            state.sellAmount,
-            state.sellCurrency,
-            buyCurrency,
-            'FORWARD'
-          ) : '',
+        buyAmount: recalculate(state.sellAmount, state.sellCurrency, buyCurrency)
       }
     }
 
     case 'SWAP_CURRENCIES': {
-      const sellCurrency = state.buyCurrency
-      const buyCurrency = state.sellCurrency
-      const sellAmount = state.buyAmount
-
-      return {
-        ...state,
-        sellCurrency,
-        buyCurrency,
-        sellAmount,
-        buyAmount: sellAmount
-          ? calculateExchangeAmount(
-            sellAmount,
-            sellCurrency,
-            buyCurrency,
-            'FORWARD'
-          ) : '',
-      }
+      return swapCurrencies(state, state.buyAmount)
     }
 
     case 'SUBMIT_FORM': {
