@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { cn } from '@/src/util/cn'
-import { useToast } from '@/src/context/toastContext'
 import { useExchangeForm } from '@/src/context/exchangeContext'
 
 import SwapButton from "./SwapButton"
@@ -23,20 +23,24 @@ const ExchangeForm = () => {
         submitForm
     } = useExchangeForm()
 
-    const { addToast } = useToast()
+    const [loading, setLoading] = useState<boolean>(false)
 
     const shouldDisableSubmit = !buyAmount || !sellAmount
-    const [loading, setLoading] = useState<boolean>(false)
 
     const onSubmit = async () => {
         setLoading(true)
-        const message =
-            `Success! ${sellAmount} ${sellCurrency} to ${buyAmount} ${buyCurrency}`
+
+        const message = `Success! ${sellAmount} ${sellCurrency} to ${buyAmount} ${buyCurrency}`
+        const exchangePromise = new Promise((resolve) => setTimeout(resolve, 3000))
+
         try {
-            await new Promise((resolve) => setTimeout(resolve, 3000))
-            addToast(message, "success")
-        } catch (err) {
-            addToast("Failed!", "error")
+            toast.promise(exchangePromise, {
+                loading: 'Processing exchange…',
+                success: message,
+                error: 'Failed!',
+            })
+
+            await exchangePromise
         } finally {
             setLoading(false)
             submitForm()

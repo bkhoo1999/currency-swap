@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic"
 import { ExchangeFormProvider } from "@/src/context/exchangeContext"
-import { ToastProvider } from "@/src/context/toastContext"
 
 const ExchangeForm = dynamic(
   () => import("@/src/component/ExchangeForm"),
@@ -18,7 +17,6 @@ const ExchangeForm = dynamic(
 
 export default function Home() {
   return (
-    <ToastProvider>
       <ExchangeFormProvider>
         <div className="bg-background h-screen w-screen max-w-screen overflow-x-hidden flex flex-col justify-center items-center">
           <div className="h-full flex flex-col items-center justify-center p-3">
@@ -28,6 +26,5 @@ export default function Home() {
           </div>
         </div>
       </ExchangeFormProvider>
-    </ToastProvider>
   )
 }

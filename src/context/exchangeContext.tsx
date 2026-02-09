@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useReducer, useMemo, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useContext, useReducer, useMemo } from 'react'
 
 import { CurrencyType } from '@/src/type'
 import { calculateExchangeAmount } from '@/src/util/calculate'
-import { useDebounce } from '@/src/util/debounce'
+import debounce from 'lodash/debounce'
 
 interface ExchangeState {
   buyAmount: string
@@ -129,40 +129,41 @@ interface ExchangeFormContextValue extends ExchangeState {
 
 const ExchangeFormContext = createContext<ExchangeFormContextValue | null>(null)
 
-const formatValue = (value: string) => {
-  if (value === '.') {
-    return '0.'
-  }
-  return value
-}
-
 export const ExchangeFormProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(exchangeReducer, initialState)
 
-  const [sellInput, setSellInput] = useState<string>(state.sellAmount);
-  const [buyInput, setBuyInput] = useState<string>(state.buyAmount);
+  const debouncedSetSellAmount = useMemo(
+    () =>
+      debounce((value: string) => {
+        dispatch({ type: 'SET_SELL_AMOUNT', value })
+      }, 300),
+    [dispatch]
+  )
 
-  const debouncedSell = useDebounce(sellInput, sellInput === '.' ? 0 : 300);
-  const debouncedBuy = useDebounce(buyInput, buyInput === '.' ? 0 : 300);
-
-  useEffect(() => {
-    if (debouncedSell !== state.sellAmount) {
-      dispatch({ type: "SET_SELL_AMOUNT", value: formatValue(debouncedSell) })
-    }
-    if (debouncedBuy !== state.buyAmount) {
-      dispatch({ type: "SET_BUY_AMOUNT", value: formatValue(debouncedBuy) })
-    }
-  }, [debouncedSell, debouncedBuy])
-
-  useEffect(() => {
-    if (sellInput !== state.sellAmount) setSellInput(state.sellAmount);
-    if (buyInput !== state.buyAmount) setBuyInput(state.buyAmount);
-  }, [state.sellAmount, state.buyAmount])
+  const debouncedSetBuyAmount = useMemo(
+    () =>
+      debounce((value: string) => {
+        dispatch({ type: 'SET_BUY_AMOUNT', value })
+      }, 300),
+    [dispatch]
+  )
 
   const value = useMemo(() => ({
     ...state,
-    setBuyAmount: (value: string) => setBuyInput(value),
-    setSellAmount: (value: string) => setSellInput(value),
+    setSellAmount: (value: string) => {
+      if (value === '.') {
+        dispatch({ type: 'SET_SELL_AMOUNT', value: '0.' })
+        return
+      }
+      debouncedSetSellAmount(value)
+    },
+    setBuyAmount: (value: string) => {
+      if (value === '.') {
+        dispatch({ type: 'SET_BUY_AMOUNT', value: '0.' })
+        return
+      }
+      debouncedSetBuyAmount(value)
+    },
     setBuyCurrency: (value: CurrencyType) => dispatch({ type: 'SET_BUY_CURRENCY', value }),
     setSellCurrency: (value: CurrencyType) => dispatch({ type: 'SET_SELL_CURRENCY', value }),
     swapCurrencies: () => dispatch({ type: 'SWAP_CURRENCIES' }),
