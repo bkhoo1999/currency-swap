@@ -132,38 +132,10 @@ const ExchangeFormContext = createContext<ExchangeFormContextValue | null>(null)
 export const ExchangeFormProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(exchangeReducer, initialState)
 
-  const debouncedSetSellAmount = useMemo(
-    () =>
-      debounce((value: string) => {
-        dispatch({ type: 'SET_SELL_AMOUNT', value })
-      }, 300),
-    [dispatch]
-  )
-
-  const debouncedSetBuyAmount = useMemo(
-    () =>
-      debounce((value: string) => {
-        dispatch({ type: 'SET_BUY_AMOUNT', value })
-      }, 300),
-    [dispatch]
-  )
-
   const value = useMemo(() => ({
     ...state,
-    setSellAmount: (value: string) => {
-      if (value === '.') {
-        dispatch({ type: 'SET_SELL_AMOUNT', value: '0.' })
-        return
-      }
-      debouncedSetSellAmount(value)
-    },
-    setBuyAmount: (value: string) => {
-      if (value === '.') {
-        dispatch({ type: 'SET_BUY_AMOUNT', value: '0.' })
-        return
-      }
-      debouncedSetBuyAmount(value)
-    },
+    setSellAmount: (value: string) => dispatch({ type: 'SET_SELL_AMOUNT', value }),
+    setBuyAmount: (value: string) => dispatch({ type: 'SET_BUY_AMOUNT', value }),
     setBuyCurrency: (value: CurrencyType) => dispatch({ type: 'SET_BUY_CURRENCY', value }),
     setSellCurrency: (value: CurrencyType) => dispatch({ type: 'SET_SELL_CURRENCY', value }),
     swapCurrencies: () => dispatch({ type: 'SWAP_CURRENCIES' }),

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { debounce } from 'lodash'
 
 import { cn } from '@/src/util/cn'
 import { useExchangeForm } from '@/src/context/exchangeContext'
@@ -8,6 +9,8 @@ import SwapButton from "./SwapButton"
 import RateInfo from "./RateInfo"
 import ExchangeInput from './ExchangeInput'
 import SubmitButton from './SubmitButton'
+
+const DEBOUNCE_DELAY = 300
 
 const ExchangeForm = () => {
     const {
@@ -26,6 +29,42 @@ const ExchangeForm = () => {
     const [loading, setLoading] = useState<boolean>(false)
 
     const shouldDisableSubmit = !buyAmount || !sellAmount
+
+    const createDebouncedSetter = (setter: (value: string) => void) =>
+        debounce((value: string) => { setter(value) }, DEBOUNCE_DELAY)
+
+    const debouncedSetSellAmount = useMemo(
+        () => createDebouncedSetter(setSellAmount),
+        [setSellAmount]
+    )
+
+    const debouncedSetBuyAmount = useMemo(
+        () => createDebouncedSetter(setBuyAmount),
+        [setBuyAmount]
+    )
+
+    useEffect(() => {
+        return () => {
+            debouncedSetSellAmount.cancel()
+            debouncedSetBuyAmount.cancel()
+        }
+    }, [debouncedSetSellAmount, debouncedSetBuyAmount])
+
+    const onChangeSellAmount = (value: string) => {
+        if (value === ".") {
+            setSellAmount("0.")
+            return
+        }
+        debouncedSetSellAmount(value)
+    }
+
+    const onChangeBuyAmount = (value: string) => {
+        if (value === ".") {
+            setBuyAmount("0.")
+            return
+        }
+        debouncedSetBuyAmount(value)
+    }
 
     const onSubmit = async () => {
         setLoading(true)
@@ -55,7 +94,7 @@ const ExchangeForm = () => {
             )}>
                 <ExchangeInput
                     title='Sell'
-                    onAmountChange={setSellAmount}
+                    onAmountChange={onChangeSellAmount}
                     onCurrencySelect={setSellCurrency}
                     amountValue={sellAmount}
                     currencyValue={sellCurrency}
@@ -67,7 +106,7 @@ const ExchangeForm = () => {
 
                 <ExchangeInput
                     title='Buy'
-                    onAmountChange={setBuyAmount}
+                    onAmountChange={onChangeBuyAmount}
                     onCurrencySelect={setBuyCurrency}
                     amountValue={buyAmount}
                     currencyValue={buyCurrency}
